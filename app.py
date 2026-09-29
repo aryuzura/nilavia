@@ -1205,52 +1205,55 @@ def render_day_plan():
         unsafe_allow_html=True
     )
 
-    cols = st.columns(3, gap="medium")
-    for i, day in enumerate(DAYS):
-        with cols[i % 3]:
-            tasks = st.session_state["action_plans"][day]
-            done = sum(1 for t in tasks if st.session_state.get(f"chk_{t['id']}", False))
+    # PERBAIKAN: Looping per baris (isi 3 kolom per baris) agar urutan hari tidak berantakan
+    for i in range(0, len(DAYS), 3):
+        cols = st.columns(3, gap="medium")
+        for j in range(3):
+            if i + j < len(DAYS):
+                day = DAYS[i + j]
+                with cols[j]:
+                    tasks = st.session_state["action_plans"][day]
+                    done = sum(1 for t in tasks if st.session_state.get(f"chk_{t['id']}", False))
 
-            st.markdown(
-                '<div class="day-title">'
-                f'<span>📅 {day}</span>'
-                f'<span class="day-count">{done}/{len(tasks)}</span>'
-                '</div>',
-                unsafe_allow_html=True
-            )
+                    st.markdown(
+                        '<div class="day-title">'
+                        f'<span>📅 {day}</span>'
+                        f'<span class="day-count">{done}/{len(tasks)}</span>'
+                        '</div>',
+                        unsafe_allow_html=True
+                    )
 
-            if tasks:
-                for task in tasks:
-                    c_cb, c_del = st.columns([8, 1])
-                    with c_cb:
-                        st.checkbox(task["task"], key=f"chk_{task['id']}")
-                    with c_del:
-                        if st.button("✕", key=f"del_{task['id']}", help="Hapus"):
-                            st.session_state["action_plans"][day] = [
-                                t for t in tasks if t["id"] != task["id"]
-                            ]
+                    if tasks:
+                        for task in tasks:
+                            c_cb, c_del = st.columns([8, 1])
+                            with c_cb:
+                                st.checkbox(task["task"], key=f"chk_{task['id']}")
+                            with c_del:
+                                if st.button("✕", key=f"del_{task['id']}", help="Hapus"):
+                                    st.session_state["action_plans"][day] = [
+                                        t for t in tasks if t["id"] != task["id"]
+                                    ]
+                                    st.rerun()
+                    else:
+                        st.caption("_Belum ada rencana._")
+
+                    with st.form(f"form_{day}", clear_on_submit=True):
+                        new_text = st.text_input(
+                            "Tambah rencana",
+                            key=f"new_{day}",
+                            placeholder=f"Rencana untuk {day}...",
+                            label_visibility="collapsed"
+                        )
+                        submitted = st.form_submit_button("➕ Tambah", use_container_width=True)
+                        if submitted and new_text.strip():
+                            st.session_state["task_counter"] += 1
+                            st.session_state["action_plans"][day].append({
+                                "id": st.session_state["task_counter"],
+                                "task": new_text.strip()
+                            })
                             st.rerun()
-            else:
-                st.caption("_Belum ada rencana._")
 
-            with st.form(f"form_{day}", clear_on_submit=True):
-                new_text = st.text_input(
-                    "Tambah rencana",
-                    key=f"new_{day}",
-                    placeholder=f"Rencana untuk {day}...",
-                    label_visibility="collapsed"
-                )
-                submitted = st.form_submit_button("➕ Tambah", use_container_width=True)
-                if submitted and new_text.strip():
-                    st.session_state["task_counter"] += 1
-                    st.session_state["action_plans"][day].append({
-                        "id": st.session_state["task_counter"],
-                        "task": new_text.strip()
-                    })
-                    st.rerun()
-
-            st.markdown("<div style='margin-bottom:0.6rem;'></div>", unsafe_allow_html=True)
-
+                    st.markdown("<div style='margin-bottom:0.6rem;'></div>", unsafe_allow_html=True)
 
 # ============================================================
 # 8. TOP NAVIGATION
